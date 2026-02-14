@@ -343,13 +343,29 @@ function looksLikeUUID(value) {
 }
 
 async function loadCase(caseId) {
-    const matchField = looksLikeUUID(caseId) ? 'id' : 'case_number';
+    const isUUID = looksLikeUUID(caseId);
+
+    let matchField;
+    let matchValue;
+
+    if (isUUID) {
+        matchField = 'id';
+        matchValue = caseId;
+    } else {
+        // case_number is SERIAL/int in your DB, so only allow digits
+        if (!/^\d+$/.test(caseId)) {
+            showError();
+            return;
+        }
+        matchField = 'case_number';
+        matchValue = Number(caseId);
+    }
 
     // Fetch the case data (by id if uuid, otherwise by case_number)
     const { data: caseData, error: caseError } = await supabaseClient
         .from('cases')
         .select('id, case_number, title, snippet, full_story, category')
-        .eq(matchField, caseId)
+        .eq(matchField, matchValue)
         .single();
 
     if (caseError || !caseData) {
