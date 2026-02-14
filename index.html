@@ -291,7 +291,7 @@ const SUPABASE_ANON = 'sb_publishable_m81YwqXOF5DjNh0ker0WZw_2g_jtwyi';
 const APP_STORE_URL = 'https://apps.apple.com/us/app/aita-whos-right/id6758395005'; // Replace with real URL
 
 // ─── INIT SUPABASE ───────────────────────────────────────────────
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 // ─── STATE ───────────────────────────────────────────────────────
 let currentCaseId  = null;
@@ -404,7 +404,7 @@ async function submitVote() {
 
     try {
         // Call the RPC function
-        const { data, error } = await supabase.rpc('vote_on_case_web', {
+        const { data, error } = await supabaseClient.rpc('vote_on_case_web', {
             p_case_id:   currentCaseId,
             p_vote_type: selectedVote
         });
