@@ -339,7 +339,7 @@ async function init() {
 // ─── LOAD CASE ───────────────────────────────────────────────────
 async function loadCase(caseId) {
     // Fetch the case data
-    const { data: caseData, error: caseError } = await supabase
+    const { data: caseData, error: caseError } = await supabaseClient
         .from('cases')
         .select('id, case_number, title, snippet, full_story, category')
         .eq('id', caseId)
@@ -351,7 +351,7 @@ async function loadCase(caseId) {
     }
 
     // Fetch combined vote stats
-    const { data: stats } = await supabase
+    const { data: stats } = await supabaseClient
         .from('combined_vote_stats')
         .select('*')
         .eq('case_id', caseId)
