@@ -337,12 +337,19 @@ async function init() {
 }
 
 // ─── LOAD CASE ───────────────────────────────────────────────────
+function looksLikeUUID(value) {
+    // UUID v4-ish validation (good enough to avoid Supabase 400 on uuid columns)
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
+}
+
 async function loadCase(caseId) {
-    // Fetch the case data
+    const matchField = looksLikeUUID(caseId) ? 'id' : 'case_number';
+
+    // Fetch the case data (by id if uuid, otherwise by case_number)
     const { data: caseData, error: caseError } = await supabaseClient
         .from('cases')
         .select('id, case_number, title, snippet, full_story, category')
-        .eq('id', caseId)
+        .eq(matchField, caseId)
         .single();
 
     if (caseError || !caseData) {
@@ -350,11 +357,14 @@ async function loadCase(caseId) {
         return;
     }
 
+    // Always use the real uuid id for everything else
+    const realCaseId = caseData.id;
+
     // Fetch combined vote stats
     const { data: stats } = await supabaseClient
         .from('combined_vote_stats')
         .select('*')
-        .eq('case_id', caseId)
+        .eq('case_id', realCaseId)
         .single();
 
     // Populate the UI
@@ -364,14 +374,16 @@ async function loadCase(caseId) {
     const totalVotes = stats ? stats.total_votes : 0;
     $totalVotes.textContent = totalVotes.toLocaleString();
 
-    // Check if user already voted (localStorage)
-    const storageKey = `aita_voted_${caseId}`;
+    // Check if user already voted (localStorage) — key by real uuid
+    const storageKey = `aita_voted_${realCaseId}`;
     const previousVote = localStorage.getItem(storageKey);
 
     if (previousVote && stats) {
-        // Already voted — show results directly
         showResults(stats, previousVote);
     }
+
+    // Make sure the rest of the page uses the real uuid going forward
+    currentCaseId = realCaseId;
 
     // Show the card, hide loading
     $loading.classList.add('hidden');
