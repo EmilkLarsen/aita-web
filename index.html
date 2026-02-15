@@ -29,6 +29,8 @@
             --gradient-bottom: #F97316;
             --purple-brand: #7C3AED;
             --purple-light: #A78BFA;
+            --teal-brand: #0D9488;
+            --teal-light: #14B8A6;
         }
 
         html, body {
@@ -170,6 +172,96 @@
             from { opacity: 0; transform: translateY(30px); }
             to   { opacity: 1; transform: translateY(0); }
         }
+
+        /* ══════════════════════════════════════ */
+        /* ── DUEL MODE STYLES ────────────────── */
+        /* ══════════════════════════════════════ */
+
+        .duel-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 14px;
+            border-radius: 9999px;
+            background: linear-gradient(135deg, var(--teal-brand), var(--teal-light));
+            color: white;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.6px;
+            text-transform: uppercase;
+        }
+
+        /* Tab switcher (mirrors the app's Side A / Side B tabs) */
+        .duel-tabs {
+            display: flex;
+            background: #F3F4F6;
+            border-radius: 12px;
+            padding: 3px;
+        }
+        .duel-tab {
+            flex: 1;
+            padding: 10px 6px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            color: #9CA3AF;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .duel-tab.active-a {
+            background: var(--purple-brand);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(124,58,237,0.3);
+        }
+        .duel-tab.active-b {
+            background: var(--teal-brand);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(13,148,136,0.3);
+        }
+
+        /* Story panels */
+        .duel-panel { display: none; }
+        .duel-panel.active {
+            display: block;
+            animation: fadeIn 0.25s ease forwards;
+        }
+
+        /* Side cards */
+        .side-card {
+            border-radius: 14px;
+            padding: 16px 18px;
+        }
+        .side-card.side-a {
+            background: #F5F3FF;
+            border-left: 4px solid var(--purple-brand);
+        }
+        .side-card.side-b {
+            background: #F0FDFA;
+            border-left: 4px solid var(--teal-brand);
+        }
+        .side-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 9px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+        }
+        .side-label.label-a {
+            background: rgba(124,58,237,0.1);
+            color: var(--purple-brand);
+        }
+        .side-label.label-b {
+            background: rgba(13,148,136,0.1);
+            color: var(--teal-brand);
+        }
     </style>
 </head>
 <body>
@@ -215,7 +307,7 @@
         <div class="bg-white rounded-3xl shadow-2xl overflow-hidden card-enter">
 
             <!-- Header bar -->
-            <div class="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
+            <div id="card-header" class="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
                 <div class="w-11 h-11 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
                     <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
@@ -229,11 +321,42 @@
 
             <!-- Case content -->
             <div class="px-6 pt-5 pb-6">
+
+                <!-- Duel badge (injected by JS when duel detected) -->
+                <div id="duel-badge-slot" class="hidden flex justify-center mb-4">
+                    <span class="duel-badge">⚔️ Duel Case</span>
+                </div>
+
                 <!-- Title -->
                 <h1 id="case-title" class="text-xl font-extrabold text-gray-900 leading-snug mb-4"></h1>
 
-                <!-- Body / Story -->
-                <p id="case-body" class="text-base text-gray-500 leading-relaxed mb-6" style="white-space: pre-line;"></p>
+                <!-- ═══ STANDARD BODY (visible for normal cases) ═══ -->
+                <div id="standard-body">
+                    <p id="case-body" class="text-base text-gray-500 leading-relaxed mb-6" style="white-space: pre-line;"></p>
+                </div>
+
+                <!-- ═══ DUEL BODY (hidden by default, shown for duels) ═══ -->
+                <div id="duel-body" class="hidden mb-6">
+                    <!-- Tabs -->
+                    <div class="duel-tabs mb-4">
+                        <div id="tab-a" class="duel-tab active-a" onclick="switchSide('a')">Side A's Story</div>
+                        <div id="tab-b" class="duel-tab" onclick="switchSide('b')">Side B's Story</div>
+                    </div>
+                    <!-- Panel A -->
+                    <div id="panel-a" class="duel-panel active">
+                        <div class="side-card side-a">
+                            <div class="side-label label-a">📝 Side A — The Poster</div>
+                            <p id="duel-story-a" class="text-base text-gray-600 leading-relaxed" style="white-space: pre-line;"></p>
+                        </div>
+                    </div>
+                    <!-- Panel B -->
+                    <div id="panel-b" class="duel-panel">
+                        <div class="side-card side-b">
+                            <div class="side-label label-b">⚡ Side B — The Opponent</div>
+                            <p id="duel-story-b" class="text-base text-gray-600 leading-relaxed" style="white-space: pre-line;"></p>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- ── VOTING SECTION ──────────────────── -->
                 <div id="vote-section">
@@ -326,11 +449,10 @@
 <!-- ================================================================ -->
 <script>
 // ─── CONFIG ──────────────────────────────────────────────────────
-// Replace these with your actual Supabase project credentials
 const SUPABASE_URL  = 'https://mnebpvhyjlasnwnmhuxm.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_m81YwqXOF5DjNh0ker0WZw_2g_jtwyi';
 
-const APP_STORE_URL = 'https://apps.apple.com/us/app/aita-whos-right/id6758395005'; // Replace with real URL
+const APP_STORE_URL = 'https://apps.apple.com/us/app/aita-whos-right/id6758395005';
 
 // ─── INIT SUPABASE ───────────────────────────────────────────────
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -342,16 +464,27 @@ let isSubmitting   = false;
 let deviceId       = null;
 
 // ─── DOM REFS ────────────────────────────────────────────────────
-const $loading     = document.getElementById('loading-state');
-const $caseCard    = document.getElementById('case-card');
-const $errorState  = document.getElementById('error-state');
-const $title       = document.getElementById('case-title');
-const $body        = document.getElementById('case-body');
-const $voteSection = document.getElementById('vote-section');
-const $results     = document.getElementById('results-section');
-const $submitBtn   = document.getElementById('submit-btn');
-const $voteCounter = document.getElementById('vote-counter');
-const $totalVotes  = document.getElementById('total-votes-display');
+const $loading      = document.getElementById('loading-state');
+const $caseCard     = document.getElementById('case-card');
+const $errorState   = document.getElementById('error-state');
+const $title        = document.getElementById('case-title');
+const $body         = document.getElementById('case-body');
+const $voteSection  = document.getElementById('vote-section');
+const $results      = document.getElementById('results-section');
+const $submitBtn    = document.getElementById('submit-btn');
+const $voteCounter  = document.getElementById('vote-counter');
+const $totalVotes   = document.getElementById('total-votes-display');
+
+// Duel-specific refs
+const $duelBadge    = document.getElementById('duel-badge-slot');
+const $standardBody = document.getElementById('standard-body');
+const $duelBody     = document.getElementById('duel-body');
+const $duelStoryA   = document.getElementById('duel-story-a');
+const $duelStoryB   = document.getElementById('duel-story-b');
+const $tabA         = document.getElementById('tab-a');
+const $tabB         = document.getElementById('tab-b');
+const $panelA       = document.getElementById('panel-a');
+const $panelB       = document.getElementById('panel-b');
 
 // ─── DEVICE ID (persistent fingerprint) ─────────────────────────
 function getOrCreateDeviceId() {
@@ -365,6 +498,21 @@ function getOrCreateDeviceId() {
         localStorage.setItem(KEY, id);
     }
     return id;
+}
+
+// ─── DUEL TAB SWITCHER ──────────────────────────────────────────
+function switchSide(side) {
+    if (side === 'a') {
+        $tabA.className  = 'duel-tab active-a';
+        $tabB.className  = 'duel-tab';
+        $panelA.className = 'duel-panel active';
+        $panelB.className = 'duel-panel';
+    } else {
+        $tabA.className  = 'duel-tab';
+        $tabB.className  = 'duel-tab active-b';
+        $panelA.className = 'duel-panel';
+        $panelB.className = 'duel-panel active';
+    }
 }
 
 // ─── ON PAGE LOAD ────────────────────────────────────────────────
@@ -398,17 +546,16 @@ async function init() {
 
 // ─── LOAD CASE ───────────────────────────────────────────────────
 function looksLikeUUID(value) {
-    // UUID v4-ish validation (good enough to avoid Supabase 400 on uuid columns)
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }
 
 async function loadCase(caseId) {
     const matchField = looksLikeUUID(caseId) ? 'id' : 'case_number';
 
-    // Fetch the case data (by id if uuid, otherwise by case_number)
+    // V65.0: Fetch duel fields alongside standard fields
     const { data: caseData, error: caseError } = await supabaseClient
         .from('cases')
-        .select('id, case_number, title, snippet, full_story, category')
+        .select('id, case_number, title, snippet, full_story, category, is_duel, opponent_story')
         .eq(matchField, caseId)
         .single();
 
@@ -427,9 +574,29 @@ async function loadCase(caseId) {
         .eq('case_id', realCaseId)
         .single();
 
-    // Populate the UI
+    // ── Detect Duel Mode ──
+    const isDuel = caseData.is_duel === true
+                && caseData.opponent_story
+                && caseData.opponent_story.trim().length > 0;
+
+    // ── Populate the UI ──
     $title.textContent = caseData.title;
-    $body.textContent  = caseData.full_story || caseData.snippet;
+
+    if (isDuel) {
+        // DUEL LAYOUT: show badge, tabs, both stories
+        $duelBadge.classList.remove('hidden');
+        $standardBody.classList.add('hidden');
+        $duelBody.classList.remove('hidden');
+
+        $duelStoryA.textContent = caseData.full_story || caseData.snippet;
+        $duelStoryB.textContent = caseData.opponent_story;
+
+        // Reset to Side A tab
+        switchSide('a');
+    } else {
+        // STANDARD LAYOUT: same as before
+        $body.textContent = caseData.full_story || caseData.snippet;
+    }
 
     const totalVotes = stats ? stats.total_votes : 0;
     $totalVotes.textContent = totalVotes.toLocaleString();
