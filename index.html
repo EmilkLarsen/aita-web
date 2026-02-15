@@ -255,7 +255,7 @@
                         </div>
                         <div class="vote-option flex flex-col items-center justify-center py-5 px-3"
                              data-vote="nah" onclick="selectVote('nah')">
-                            <span class="text-3xl mb-1.5">☑️</span>
+                            <span class="text-3xl mb-1.5">✅</span>
                             <span class="text-sm font-bold text-gray-700">No One Sucks</span>
                         </div>
                     </div>
@@ -276,11 +276,11 @@
             </div>
         </div>
 
-        <!-- ── ANONYM JUDGMENT link ──────────────────────── -->
+        <!-- ── ANONYM JUDGMENT label ──────────────────────── -->
         <div class="text-center mt-5">
-            <a href="#" class="text-sm font-semibold text-white/80 underline underline-offset-4 decoration-white/40 hover:text-white transition-colors">
+            <span class="text-sm font-semibold text-white/80">
                 anonym judgment
-            </a>
+            </span>
         </div>
 
         <!-- ── SOCIAL PROOF counter ─────────────────────── -->
@@ -300,8 +300,8 @@
 
         <!-- ── Footer ───────────────────────────────────── -->
         <div class="flex items-center justify-center gap-6 mt-6 pb-4">
-            <a href="#" class="text-sm text-white/60 hover:text-white/90 transition-colors">Terms</a>
-            <a href="#" class="text-sm text-white/60 hover:text-white/90 transition-colors">Privacy</a>
+            <a href="https://www.tapmediagroup.com/aita/termsofservice" target="_blank" class="text-sm text-white/60 hover:text-white/90 transition-colors">Terms</a>
+            <a href="https://www.tapmediagroup.com/aita/privacypolicy" target="_blank" class="text-sm text-white/60 hover:text-white/90 transition-colors">Privacy</a>
         </div>
     </div>
 
@@ -542,7 +542,7 @@ function showResults(stats, userVote, wasDuplicate) {
         { key: 'nta', label: "They're Wrong",   emoji: '👎', count: tw,  color: '#EF4444' },
         { key: 'yta', label: "You're Wrong",     emoji: '🚫', count: yw,  color: '#10B981' },
         { key: 'esh', label: 'Everyone Sucks',   emoji: '💥', count: es,  color: '#F59E0B' },
-        { key: 'nah', label: 'No One Sucks',     emoji: '☑️', count: nos, color: '#9CA3AF' },
+        { key: 'nah', label: 'No One Sucks',     emoji: '✅', count: nos, color: '#9CA3AF' },
     ];
 
     // Sort by count descending (winner on top)
@@ -558,10 +558,13 @@ function showResults(stats, userVote, wasDuplicate) {
         const isUser = r.key === userVote;
         const delay = i * 120;
 
-        // When fill >= 35%, text sits on colored bar (white). Otherwise on grey track (dark).
-        const onFill = pct >= 35;
+        // Label (left side): white text when fill covers it (>= 25%), dark otherwise
+        const onFill = pct >= 25;
         const lblColor = onFill ? '#ffffff' : '#374151';
-        const pctColor = onFill ? 'rgba(255,255,255,0.95)' : r.color;
+
+        // Percentage (right side): ALWAYS dark/colored since it sits on the grey track
+        // Only go white if fill is nearly full (>= 85%) so it actually covers the right edge
+        const pctColor = pct >= 85 ? '#ffffff' : r.color;
 
         const badge = isUser
             ? `<span class="your-vote-pill" style="background:${onFill ? 'rgba(255,255,255,0.22)' : r.color + '15'}; color:${onFill ? '#fff' : r.color}">✓ you</span>`
