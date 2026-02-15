@@ -176,6 +176,20 @@
             to   { opacity: 1; transform: translateY(0); }
         }
 
+        /* ── Live counter pulse dot ─────────── */
+        .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #34D399;
+            flex-shrink: 0;
+            animation: pulse-dot 2s ease-in-out infinite;
+        }
+        @keyframes pulse-dot {
+            0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(52, 211, 153, 0.5); }
+            50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(52, 211, 153, 0); }
+        }
+
         /* ══════════════════════════════════════ */
         /* ── DUEL MODE STYLES (V69.0) ────────── */
         /* ══════════════════════════════════════ */
@@ -601,11 +615,14 @@
             </span>
         </div>
 
-        <!-- ── SOCIAL PROOF counter ─────────────────────── -->
-        <div id="vote-counter" class="text-center mt-10 hidden">
-            <p class="text-lg font-bold text-white">
-                👇 <span id="total-votes-display">0</span> people have judged this case 👇
-            </p>
+        <!-- ── LIVE SOCIAL PROOF counter (V70.0) ─────────── -->
+        <div id="live-counter-section" class="text-center mt-8">
+            <div class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm rounded-full px-5 py-2.5">
+                <span class="live-dot"></span>
+                <p class="text-sm text-white/90">
+                    <span id="live-counter" class="font-bold text-white">0</span> people joined the jury today
+                </p>
+            </div>
         </div>
 
         <!-- ── CTA: Download App ────────────────────────── -->
@@ -668,8 +685,8 @@ const $body         = document.getElementById('case-body');
 const $voteSection  = document.getElementById('vote-section');
 const $results      = document.getElementById('results-section');
 const $submitBtn    = document.getElementById('submit-btn');
-const $voteCounter  = document.getElementById('vote-counter');
-const $totalVotes   = document.getElementById('total-votes-display');
+const $voteCounter  = document.getElementById('live-counter-section');
+const $liveCounter  = document.getElementById('live-counter');
 
 // Standard header refs
 const $cardHeader     = document.getElementById('card-header');
@@ -887,7 +904,7 @@ async function loadCase(caseId) {
     $title.textContent = caseData.title;
 
     const totalVotes = stats ? stats.total_votes : 0;
-    $totalVotes.textContent = totalVotes.toLocaleString();
+    // V70.0: vote count now in live counter
 
     // ── SERVER-SIDE dedup check ──
     let previousVote = null;
@@ -926,7 +943,7 @@ async function loadCase(caseId) {
 
     $loading.classList.add('hidden');
     $caseCard.classList.remove('hidden');
-    $voteCounter.classList.remove('hidden');
+    // V70.0: live counter always visible
 }
 
 // ─── SELECT A VOTE ───────────────────────────────────────────────
@@ -965,7 +982,7 @@ async function submitVote() {
         showResults(data, selectedVote, data.already_voted);
 
         if (data && data.total_votes) {
-            $totalVotes.textContent = data.total_votes.toLocaleString();
+            // V70.0: vote count now in live counter
         }
 
     } catch (err) {
@@ -1052,8 +1069,8 @@ function showResults(stats, userVote, wasDuplicate) {
         }, 100);
     });
 
-    $totalVotes.textContent = total.toLocaleString();
-    $voteCounter.classList.remove('hidden');
+    // V70.0: vote count now in live counter
+    // V70.0: live counter always visible
 }
 
 // ─── SHOW ERROR STATE ────────────────────────────────────────────
@@ -1062,6 +1079,30 @@ function showError() {
     $caseCard.classList.add('hidden');
     $errorState.classList.remove('hidden');
 }
+
+// ─── LIVE SOCIAL PROOF COUNTER (V70.0) ──────────────────────────
+(function initLiveCounter() {
+    const $counter = document.getElementById('live-counter');
+    if (!$counter) return;
+
+    // Random start between 516–625
+    let count = Math.floor(Math.random() * (625 - 516 + 1)) + 516;
+    const CAP = 850;
+    $counter.textContent = count.toLocaleString();
+
+    function scheduleNext() {
+        if (count >= CAP) return;
+        // Random interval between 3–12 seconds
+        const delay = (Math.random() * 9 + 3) * 1000;
+        setTimeout(() => {
+            count++;
+            $counter.textContent = count.toLocaleString();
+            scheduleNext();
+        }, delay);
+    }
+
+    scheduleNext();
+})();
 </script>
 
 </body>
