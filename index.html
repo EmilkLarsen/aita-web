@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AITA — Cast Your Judgment</title>
 
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+
     <!-- Open Graph for link previews -->
     <meta property="og:title" content="AITA — Judge Real-Life Conflicts">
     <meta property="og:description" content="Cast your vote on this case. Who's wrong here?">
@@ -174,7 +177,7 @@
         }
 
         /* ══════════════════════════════════════ */
-        /* ── DUEL MODE STYLES (V68.0) ────────── */
+        /* ── DUEL MODE STYLES (V69.0) ────────── */
         /* ══════════════════════════════════════ */
 
         .duel-badge {
@@ -191,7 +194,7 @@
             text-transform: uppercase;
         }
 
-        /* ── Face-Off Section (V68.0 — Clean) ── */
+        /* ── Face-Off Section (V69.0 — Interactive) ── */
         .faceoff-container {
             display: flex;
             flex-direction: column;
@@ -213,6 +216,12 @@
             gap: 8px;
             flex: 1;
             min-width: 0;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+            user-select: none;
+        }
+        .faceoff-side:active .faceoff-avatar {
+            transform: scale(0.95);
         }
         .faceoff-avatar {
             width: 72px;
@@ -224,14 +233,31 @@
             font-size: 34px;
             flex-shrink: 0;
             overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
+        /* Active states for avatars */
         .faceoff-avatar.avatar-a {
             background: #EDE9FE;
             border: 3px solid var(--purple-brand);
+            opacity: 1;
+            transform: scale(1.08);
         }
         .faceoff-avatar.avatar-b {
             background: #CCFBF1;
             border: 3px solid var(--teal-brand);
+            opacity: 1;
+            transform: scale(1.08);
+        }
+        /* Inactive states */
+        .faceoff-avatar.avatar-a.inactive {
+            border-color: #D1D5DB;
+            opacity: 0.5;
+            transform: scale(1);
+        }
+        .faceoff-avatar.avatar-b.inactive {
+            border-color: #D1D5DB;
+            opacity: 0.5;
+            transform: scale(1);
         }
         .faceoff-avatar img {
             width: 100%;
@@ -253,6 +279,10 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            transition: opacity 0.3s ease;
+        }
+        .faceoff-username.inactive {
+            opacity: 0.5;
         }
 
         .vs-badge {
@@ -266,7 +296,6 @@
             flex-shrink: 0;
             box-shadow: 0 2px 10px rgba(13, 148, 136, 0.35);
             margin: 0 4px;
-            /* Vertically center with avatars (72px tall, badge 42px → offset ~15px from top) */
             margin-top: 15px;
         }
         .vs-badge span {
@@ -444,10 +473,10 @@
                     <!-- DUEL pill -->
                     <span class="duel-badge">⚔ DUEL</span>
 
-                    <!-- Face-Off Row: Avatar A — VS — Avatar B -->
+                    <!-- Face-Off Row: clickable avatars -->
                     <div class="faceoff-row">
-                        <!-- Side A -->
-                        <div class="faceoff-side">
+                        <!-- Side A (clickable) -->
+                        <div class="faceoff-side" onclick="switchSide('a')">
                             <div class="faceoff-avatar avatar-a" id="faceoff-avatar-a">
                                 <svg class="faceoff-avatar-fallback" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
                             </div>
@@ -459,12 +488,12 @@
                             <span>VS</span>
                         </div>
 
-                        <!-- Side B -->
-                        <div class="faceoff-side">
-                            <div class="faceoff-avatar avatar-b" id="faceoff-avatar-b">
+                        <!-- Side B (clickable) -->
+                        <div class="faceoff-side" onclick="switchSide('b')">
+                            <div class="faceoff-avatar avatar-b inactive" id="faceoff-avatar-b">
                                 <svg class="faceoff-avatar-fallback" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
                             </div>
-                            <span id="faceoff-username-b" class="faceoff-username">@anonymous</span>
+                            <span id="faceoff-username-b" class="faceoff-username inactive">@anonymous</span>
                         </div>
                     </div>
                 </div>
@@ -628,6 +657,7 @@ let currentCaseId  = null;
 let selectedVote   = null;
 let isSubmitting   = false;
 let deviceId       = null;
+let activeDuelSide = 'a';
 
 // ─── DOM REFS ────────────────────────────────────────────────────
 const $loading      = document.getElementById('loading-state');
@@ -646,7 +676,7 @@ const $cardHeader     = document.getElementById('card-header');
 const $headerAvatar   = document.getElementById('header-avatar');
 const $headerUsername  = document.getElementById('header-username');
 
-// Duel face-off refs (V68.0 — no duplicate author bar, no extra labels)
+// Duel face-off refs
 const $duelHeader         = document.getElementById('duel-header');
 const $faceoffAvatarA     = document.getElementById('faceoff-avatar-a');
 const $faceoffAvatarB     = document.getElementById('faceoff-avatar-b');
@@ -692,8 +722,12 @@ function renderAvatar(el, profile) {
     }
 }
 
-// ─── DUEL TAB SWITCHER ──────────────────────────────────────────
+// ─── DUEL SIDE SWITCHER (V69.0 — syncs tabs + avatars + panels) ─
 function switchSide(side) {
+    if (activeDuelSide === side) return;
+    activeDuelSide = side;
+
+    // ── Update tabs ──
     if (side === 'a') {
         $tabA.className  = 'duel-tab active-a';
         $tabB.className  = 'duel-tab';
@@ -704,6 +738,21 @@ function switchSide(side) {
         $tabB.className  = 'duel-tab active-b';
         $panelA.className = 'duel-panel';
         $panelB.className = 'duel-panel active';
+    }
+
+    // ── Update face-off avatar states ──
+    if (side === 'a') {
+        // A active, B inactive
+        $faceoffAvatarA.classList.remove('inactive');
+        $faceoffUsernameA.classList.remove('inactive');
+        $faceoffAvatarB.classList.add('inactive');
+        $faceoffUsernameB.classList.add('inactive');
+    } else {
+        // B active, A inactive
+        $faceoffAvatarB.classList.remove('inactive');
+        $faceoffUsernameB.classList.remove('inactive');
+        $faceoffAvatarA.classList.add('inactive');
+        $faceoffUsernameA.classList.add('inactive');
     }
 }
 
@@ -741,7 +790,7 @@ function looksLikeUUID(value) {
 async function loadCase(caseId) {
     const matchField = looksLikeUUID(caseId) ? 'id' : 'case_number';
 
-    // V68.0: Fetch author + opponent profiles via foreign key joins
+    // V69.0: Fetch author + opponent profiles via foreign key joins
     const { data: caseData, error: caseError } = await supabaseClient
         .from('cases')
         .select(`
@@ -780,7 +829,6 @@ async function loadCase(caseId) {
         // DUEL LAYOUT — Face-Off replaces header
         // ═══════════════════════════════════════
 
-        // Hide standard header entirely, show duel face-off
         $cardHeader.classList.add('hidden');
         $duelHeader.classList.remove('hidden');
 
@@ -802,14 +850,14 @@ async function loadCase(caseId) {
         $standardBody.classList.add('hidden');
         $duelBody.classList.remove('hidden');
 
-        // Side A story panel: Author
+        // Side A story panel
         $duelStoryA.textContent = caseData.full_story || caseData.snippet;
         if (authorProfile) {
             $usernameA.textContent = `@${authorProfile.username || 'anonymous'}`;
             renderAvatar($avatarA, authorProfile);
         }
 
-        // Side B story panel: Opponent
+        // Side B story panel
         $duelStoryB.textContent = caseData.opponent_story;
         if (oppProfile) {
             $usernameB.textContent = `@${oppProfile.username || 'anonymous'}`;
@@ -818,6 +866,8 @@ async function loadCase(caseId) {
             $usernameB.textContent = '@anonymous';
         }
 
+        // Initialize to Side A (sets avatar states + tabs)
+        activeDuelSide = 'b'; // force so switchSide('a') actually runs
         switchSide('a');
 
     } else {
