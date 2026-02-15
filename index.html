@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>AITA — Cast Your Judgment</title>
-    <link rel="icon" type="image/png" href="/favicon.png">
 
     <!-- Open Graph for link previews -->
     <meta property="og:title" content="AITA — Judge Real-Life Conflicts">
@@ -107,9 +106,51 @@
             transform: translateY(0);
         }
 
-        /* ── Result bars ─────────────────────── */
+        /* ── Thick Result Bars (App-Style) ──── */
+        .result-bar-track {
+            position: relative;
+            height: 48px;
+            border-radius: 9999px;
+            overflow: hidden;
+            background: #F3F4F6;
+        }
         .result-bar-fill {
-            transition: width 0.8s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            position: absolute;
+            top: 0; left: 0;
+            height: 100%;
+            border-radius: 9999px;
+            min-width: 0%;
+            transition: min-width 0.9s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .result-bar-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+            padding: 0 18px;
+        }
+        .result-bar-label {
+            font-size: 14px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .result-bar-pct {
+            font-size: 16px;
+            font-weight: 800;
+            white-space: nowrap;
+        }
+        .your-vote-pill {
+            display: inline-flex;
+            align-items: center;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+            padding: 2px 7px;
+            border-radius: 9999px;
+            margin-left: 6px;
         }
 
         /* ── Fade-in animation ───────────────── */
@@ -298,6 +339,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON)
 let currentCaseId  = null;
 let selectedVote   = null;
 let isSubmitting   = false;
+let deviceId       = null;
 
 // ─── DOM REFS ────────────────────────────────────────────────────
 const $loading     = document.getElementById('loading-state');
@@ -311,10 +353,27 @@ const $submitBtn   = document.getElementById('submit-btn');
 const $voteCounter = document.getElementById('vote-counter');
 const $totalVotes  = document.getElementById('total-votes-display');
 
+// ─── DEVICE ID (persistent fingerprint) ─────────────────────────
+function getOrCreateDeviceId() {
+    const KEY = 'aita_device_id';
+    let id = localStorage.getItem(KEY);
+    if (!id) {
+        id = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+        localStorage.setItem(KEY, id);
+    }
+    return id;
+}
+
 // ─── ON PAGE LOAD ────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
+    // Initialize device ID for anti-spam
+    deviceId = getOrCreateDeviceId();
+
     // Update all download links
     document.querySelectorAll('a[href*="apps.apple.com"]').forEach(a => {
         a.href = APP_STORE_URL;
@@ -344,29 +403,13 @@ function looksLikeUUID(value) {
 }
 
 async function loadCase(caseId) {
-    const isUUID = looksLikeUUID(caseId);
-
-    let matchField;
-    let matchValue;
-
-    if (isUUID) {
-        matchField = 'id';
-        matchValue = caseId;
-    } else {
-        // case_number is SERIAL/int in your DB, so only allow digits
-        if (!/^\d+$/.test(caseId)) {
-            showError();
-            return;
-        }
-        matchField = 'case_number';
-        matchValue = Number(caseId);
-    }
+    const matchField = looksLikeUUID(caseId) ? 'id' : 'case_number';
 
     // Fetch the case data (by id if uuid, otherwise by case_number)
     const { data: caseData, error: caseError } = await supabaseClient
         .from('cases')
         .select('id, case_number, title, snippet, full_story, category')
-        .eq(matchField, matchValue)
+        .eq(matchField, caseId)
         .single();
 
     if (caseError || !caseData) {
@@ -391,12 +434,38 @@ async function loadCase(caseId) {
     const totalVotes = stats ? stats.total_votes : 0;
     $totalVotes.textContent = totalVotes.toLocaleString();
 
-    // Check if user already voted (localStorage) — key by real uuid
-    const storageKey = `aita_voted_${realCaseId}`;
-    const previousVote = localStorage.getItem(storageKey);
+    // ── SERVER-SIDE dedup check ──
+    let previousVote = null;
+
+    try {
+        const { data: existingVotes, error: checkErr } = await supabaseClient
+            .from('web_votes')
+            .select('vote')
+            .eq('case_id', realCaseId)
+            .eq('device_id', deviceId)
+            .limit(1);
+
+        if (!checkErr && existingVotes && existingVotes.length > 0) {
+            const voteMap = {
+                'youre_wrong': 'yta',
+                'theyre_wrong': 'nta',
+                'everyone_sucks': 'esh',
+                'no_one_sucks': 'nah'
+            };
+            previousVote = voteMap[existingVotes[0].vote] || null;
+        }
+    } catch (e) {
+        console.warn('Dedup check failed, falling back to localStorage:', e);
+    }
+
+    // Fallback: localStorage (covers old votes before device_id migration)
+    if (!previousVote) {
+        const storageKey = `aita_voted_${realCaseId}`;
+        previousVote = localStorage.getItem(storageKey);
+    }
 
     if (previousVote && stats) {
-        showResults(stats, previousVote);
+        showResults(stats, previousVote, true);
     }
 
     // Make sure the rest of the page uses the real uuid going forward
@@ -432,20 +501,21 @@ async function submitVote() {
     $submitBtn.textContent = 'Submitting...';
 
     try {
-        // Call the RPC function
+        // Call the RPC function with device_id for anti-spam
         const { data, error } = await supabaseClient.rpc('vote_on_case_web', {
             p_case_id:   currentCaseId,
-            p_vote_type: selectedVote
+            p_vote_type: selectedVote,
+            p_device_id: deviceId
         });
 
         if (error) throw error;
         if (data && !data.success) throw new Error(data.error);
 
-        // Save to localStorage to prevent re-voting
+        // Save to localStorage as backup
         localStorage.setItem(`aita_voted_${currentCaseId}`, selectedVote);
 
-        // Show results
-        showResults(data, selectedVote);
+        // Show results (mark if server detected duplicate)
+        showResults(data, selectedVote, data.already_voted);
 
         // Update total counter
         if (data && data.total_votes) {
@@ -460,71 +530,85 @@ async function submitVote() {
     }
 }
 
-// ─── SHOW RESULTS ────────────────────────────────────────────────
-function showResults(stats, userVote) {
-    // Normalize keys — handle both RPC response and view query
+// ─── SHOW RESULTS (App-Style Thick Pill Bars) ────────────────────
+function showResults(stats, userVote, wasDuplicate) {
     const yw  = stats.youre_wrong     || stats.youre_wrong_count     || 0;
     const tw  = stats.theyre_wrong    || stats.theyre_wrong_count    || 0;
     const es  = stats.everyone_sucks  || stats.everyone_sucks_count  || 0;
     const nos = stats.no_one_sucks    || stats.no_one_sucks_count    || 0;
-    const total = yw + tw + es + nos || 1; // avoid division by zero
+    const total = (yw + tw + es + nos) || 1;
 
     const results = [
-        { key: 'yta', label: "You're Wrong",    emoji: '🚫', count: yw,  color: '#EF4444', bg: '#FEE2E2' },
-        { key: 'nta', label: "They're Wrong",   emoji: '❌', count: tw,  color: '#F59E0B', bg: '#FEF3C7' },
-        { key: 'esh', label: 'Everyone Sucks',  emoji: '💥', count: es,  color: '#8B5CF6', bg: '#EDE9FE' },
-        { key: 'nah', label: 'No One Sucks',    emoji: '☑️', count: nos, color: '#10B981', bg: '#D1FAE5' },
+        { key: 'nta', label: "They're Wrong",   emoji: '👎', count: tw,  color: '#EF4444' },
+        { key: 'yta', label: "You're Wrong",     emoji: '🚫', count: yw,  color: '#10B981' },
+        { key: 'esh', label: 'Everyone Sucks',   emoji: '💥', count: es,  color: '#F59E0B' },
+        { key: 'nah', label: 'No One Sucks',     emoji: '☑️', count: nos, color: '#9CA3AF' },
     ];
 
-    // Sort by count descending
+    // Sort by count descending (winner on top)
     results.sort((a, b) => b.count - a.count);
 
-    // Build result bars
-    let html = '';
+    const headerText = wasDuplicate
+        ? '<p class="text-base font-bold text-amber-600 mb-0.5">You already voted on this case</p><p class="text-sm text-gray-400">Here are the current results</p>'
+        : '<p class="text-base font-bold text-green-600 mb-0.5">✓ Vote submitted!</p><p class="text-sm text-gray-400">Thanks for casting your judgment</p>';
+
+    let barsHtml = '';
     results.forEach((r, i) => {
         const pct = Math.round((r.count / total) * 100);
-        const isUserVote = r.key === userVote;
-        const delay = i * 100;
+        const isUser = r.key === userVote;
+        const delay = i * 120;
 
-        html += `
-        <div class="mb-3 ${isUserVote ? 'ring-2 ring-offset-2 rounded-xl' : ''}"
-             style="${isUserVote ? `ring-color: ${r.color};` : ''}">
-            <div class="flex items-center justify-between mb-1.5 px-1">
-                <span class="text-sm font-semibold text-gray-700">
-                    ${r.emoji} ${r.label} ${isUserVote ? '<span class="text-xs text-gray-400 ml-1">(your vote)</span>' : ''}
-                </span>
-                <span class="text-sm font-bold" style="color: ${r.color}">${pct}%</span>
-            </div>
-            <div class="w-full h-3 rounded-full overflow-hidden" style="background: ${r.bg}">
-                <div class="result-bar-fill h-full rounded-full" 
-                     style="width: 0%; background: ${r.color}; animation-delay: ${delay}ms;"
-                     data-width="${pct}%">
+        // When fill >= 35%, text sits on colored bar (white). Otherwise on grey track (dark).
+        const onFill = pct >= 35;
+        const lblColor = onFill ? '#ffffff' : '#374151';
+        const pctColor = onFill ? 'rgba(255,255,255,0.95)' : r.color;
+
+        const badge = isUser
+            ? `<span class="your-vote-pill" style="background:${onFill ? 'rgba(255,255,255,0.22)' : r.color + '15'}; color:${onFill ? '#fff' : r.color}">✓ you</span>`
+            : '';
+
+        const ringStyle = isUser ? `box-shadow: 0 0 0 2.5px ${r.color}44; ` : '';
+
+        barsHtml += `
+        <div style="margin-bottom: 10px; animation: fadeIn 0.4s ${delay}ms both;">
+            <div class="result-bar-track" style="${ringStyle}">
+                <div class="result-bar-fill"
+                     style="min-width: 0%; background: ${r.color};"
+                     data-width="${Math.max(pct, 4)}%"></div>
+                <div class="result-bar-content">
+                    <span class="result-bar-label" style="color: ${lblColor}">
+                        ${r.emoji} ${r.label}${badge}
+                    </span>
+                    <span class="result-bar-pct" style="color: ${pctColor}">
+                        ${pct}%
+                    </span>
                 </div>
             </div>
         </div>`;
     });
 
-    // Hide vote buttons, show results
+    const summaryHtml = `
+        <div class="text-center mt-3 pt-3 border-t border-gray-100">
+            <p class="text-xs text-gray-400 font-medium">${total.toLocaleString()} total vote${total !== 1 ? 's' : ''}</p>
+        </div>`;
+
     $voteSection.classList.add('hidden');
     $results.innerHTML = `
-        <div class="text-center mb-6">
-            <p class="text-lg font-bold text-green-600 mb-1">✓ Vote submitted!</p>
-            <p class="text-sm text-gray-400">Thanks for casting your judgment</p>
-        </div>
-        ${html}
+        <div class="text-center mb-5">${headerText}</div>
+        ${barsHtml}
+        ${summaryHtml}
     `;
     $results.classList.remove('hidden');
 
-    // Animate bars after a short delay
+    // Animate bar fills
     requestAnimationFrame(() => {
         setTimeout(() => {
             document.querySelectorAll('.result-bar-fill').forEach(bar => {
-                bar.style.width = bar.dataset.width;
+                bar.style.minWidth = bar.dataset.width;
             });
-        }, 150);
+        }, 100);
     });
 
-    // Update total
     $totalVotes.textContent = total.toLocaleString();
     $voteCounter.classList.remove('hidden');
 }
