@@ -174,7 +174,7 @@
         }
 
         /* ══════════════════════════════════════ */
-        /* ── DUEL MODE STYLES ────────────────── */
+        /* ── DUEL MODE STYLES (V66.0) ────────── */
         /* ══════════════════════════════════════ */
 
         .duel-badge {
@@ -191,7 +191,7 @@
             text-transform: uppercase;
         }
 
-        /* Tab switcher (mirrors the app's Side A / Side B tabs) */
+        /* Tab switcher */
         .duel-tabs {
             display: flex;
             background: #F3F4F6;
@@ -229,39 +229,77 @@
             animation: fadeIn 0.25s ease forwards;
         }
 
-        /* Side cards */
-        .side-card {
-            border-radius: 14px;
-            padding: 16px 18px;
-        }
-        .side-card.side-a {
-            background: #F5F3FF;
-            border-left: 4px solid var(--purple-brand);
-        }
-        .side-card.side-b {
-            background: #F0FDFA;
-            border-left: 4px solid var(--teal-brand);
-        }
-        .side-label {
-            display: inline-flex;
+        /* "What Happened" section header (matches iOS) */
+        .section-header {
+            display: flex;
             align-items: center;
-            gap: 5px;
-            font-size: 11px;
+            gap: 10px;
+            margin-bottom: 14px;
+        }
+        .section-header-text {
+            font-size: 15px;
+            font-weight: 800;
+            color: #111827;
+            white-space: nowrap;
+        }
+        .section-header-line {
+            flex: 1;
+            height: 2px;
+            border-radius: 1px;
+        }
+        .section-header-line.line-a { background: var(--purple-brand); opacity: 0.25; }
+        .section-header-line.line-b { background: var(--teal-brand); opacity: 0.25; }
+
+        /* Profile row above each duel story */
+        .duel-profile {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+        .duel-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+        .duel-avatar.avatar-a {
+            background: #EDE9FE;
+            border: 2px solid var(--purple-brand);
+        }
+        .duel-avatar.avatar-b {
+            background: #CCFBF1;
+            border: 2px solid var(--teal-brand);
+        }
+        .duel-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .duel-avatar-fallback {
+            width: 20px;
+            height: 20px;
+            color: #9CA3AF;
+        }
+        .duel-username {
+            font-size: 13px;
             font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 3px 9px;
-            border-radius: 6px;
-            margin-bottom: 10px;
+            color: #6B7280;
         }
-        .side-label.label-a {
-            background: rgba(124,58,237,0.1);
-            color: var(--purple-brand);
+
+        /* Left-border accent for story text (matching iOS app) */
+        .story-accent {
+            border-left: 3px solid;
+            padding-left: 14px;
         }
-        .side-label.label-b {
-            background: rgba(13,148,136,0.1);
-            color: var(--teal-brand);
-        }
+        .story-accent.accent-a { border-color: var(--purple-brand); }
+        .story-accent.accent-b { border-color: var(--teal-brand); }
     </style>
 </head>
 <body>
@@ -274,7 +312,6 @@
     <!-- ── LOADING STATE ─────────────────────────────────────── -->
     <div id="loading-state" class="w-full max-w-md mt-8">
         <div class="bg-white rounded-3xl p-6 shadow-xl">
-            <!-- Avatar skeleton -->
             <div class="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
                 <div class="skeleton w-11 h-11 rounded-full shrink-0"></div>
                 <div class="flex flex-col gap-2">
@@ -282,16 +319,13 @@
                     <div class="skeleton w-36 h-4"></div>
                 </div>
             </div>
-            <!-- Title skeleton -->
             <div class="skeleton w-full h-6 mb-3"></div>
             <div class="skeleton w-3/4 h-6 mb-6"></div>
-            <!-- Body skeleton -->
             <div class="skeleton w-full h-4 mb-2"></div>
             <div class="skeleton w-full h-4 mb-2"></div>
             <div class="skeleton w-5/6 h-4 mb-2"></div>
             <div class="skeleton w-full h-4 mb-2"></div>
             <div class="skeleton w-2/3 h-4 mb-8"></div>
-            <!-- Vote button skeletons -->
             <div class="grid grid-cols-2 gap-3 mb-4">
                 <div class="skeleton h-24 rounded-2xl"></div>
                 <div class="skeleton h-24 rounded-2xl"></div>
@@ -306,15 +340,15 @@
     <div id="case-card" class="w-full max-w-md mt-6 hidden">
         <div class="bg-white rounded-3xl shadow-2xl overflow-hidden card-enter">
 
-            <!-- Header bar -->
+            <!-- Header bar (dynamically updated with author profile) -->
             <div id="card-header" class="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
-                <div class="w-11 h-11 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
+                <div id="header-avatar" class="w-11 h-11 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
                     <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
                     </svg>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-400 font-medium leading-tight">@anonymous</p>
+                    <p id="header-username" class="text-sm text-gray-400 font-medium leading-tight">@anonymous</p>
                     <p class="text-base font-bold text-gray-800 leading-tight">cast your judgment!</p>
                 </div>
             </div>
@@ -322,9 +356,9 @@
             <!-- Case content -->
             <div class="px-6 pt-5 pb-6">
 
-                <!-- Duel badge (injected by JS when duel detected) -->
+                <!-- Duel badge (shown for duel cases) -->
                 <div id="duel-badge-slot" class="hidden flex justify-center mb-4">
-                    <span class="duel-badge">⚔️ Duel Case</span>
+                    <span class="duel-badge">⚔️ DUEL</span>
                 </div>
 
                 <!-- Title -->
@@ -335,25 +369,45 @@
                     <p id="case-body" class="text-base text-gray-500 leading-relaxed mb-6" style="white-space: pre-line;"></p>
                 </div>
 
-                <!-- ═══ DUEL BODY (hidden by default, shown for duels) ═══ -->
+                <!-- ═══ DUEL BODY (hidden by default) ═══ -->
                 <div id="duel-body" class="hidden mb-6">
                     <!-- Tabs -->
-                    <div class="duel-tabs mb-4">
+                    <div class="duel-tabs mb-5">
                         <div id="tab-a" class="duel-tab active-a" onclick="switchSide('a')">Side A's Story</div>
                         <div id="tab-b" class="duel-tab" onclick="switchSide('b')">Side B's Story</div>
                     </div>
+
                     <!-- Panel A -->
                     <div id="panel-a" class="duel-panel active">
-                        <div class="side-card side-a">
-                            <div class="side-label label-a">📝 Side A — The Poster</div>
-                            <p id="duel-story-a" class="text-base text-gray-600 leading-relaxed" style="white-space: pre-line;"></p>
+                        <div class="section-header">
+                            <span class="section-header-text">What Happened</span>
+                            <div class="section-header-line line-a"></div>
+                        </div>
+                        <div id="profile-a" class="duel-profile">
+                            <div class="duel-avatar avatar-a" id="avatar-a">
+                                <svg class="duel-avatar-fallback" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                            </div>
+                            <span id="username-a" class="duel-username">@anonymous</span>
+                        </div>
+                        <div class="story-accent accent-a">
+                            <p id="duel-story-a" class="text-base text-gray-500 leading-relaxed" style="white-space: pre-line;"></p>
                         </div>
                     </div>
+
                     <!-- Panel B -->
                     <div id="panel-b" class="duel-panel">
-                        <div class="side-card side-b">
-                            <div class="side-label label-b">⚡ Side B — The Opponent</div>
-                            <p id="duel-story-b" class="text-base text-gray-600 leading-relaxed" style="white-space: pre-line;"></p>
+                        <div class="section-header">
+                            <span class="section-header-text">What Happened</span>
+                            <div class="section-header-line line-b"></div>
+                        </div>
+                        <div id="profile-b" class="duel-profile">
+                            <div class="duel-avatar avatar-b" id="avatar-b">
+                                <svg class="duel-avatar-fallback" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                            </div>
+                            <span id="username-b" class="duel-username">@opponent</span>
+                        </div>
+                        <div class="story-accent accent-b">
+                            <p id="duel-story-b" class="text-base text-gray-500 leading-relaxed" style="white-space: pre-line;"></p>
                         </div>
                     </div>
                 </div>
@@ -475,6 +529,10 @@ const $submitBtn    = document.getElementById('submit-btn');
 const $voteCounter  = document.getElementById('vote-counter');
 const $totalVotes   = document.getElementById('total-votes-display');
 
+// Header refs
+const $headerAvatar   = document.getElementById('header-avatar');
+const $headerUsername  = document.getElementById('header-username');
+
 // Duel-specific refs
 const $duelBadge    = document.getElementById('duel-badge-slot');
 const $standardBody = document.getElementById('standard-body');
@@ -485,6 +543,10 @@ const $tabA         = document.getElementById('tab-a');
 const $tabB         = document.getElementById('tab-b');
 const $panelA       = document.getElementById('panel-a');
 const $panelB       = document.getElementById('panel-b');
+const $avatarA      = document.getElementById('avatar-a');
+const $usernameA    = document.getElementById('username-a');
+const $avatarB      = document.getElementById('avatar-b');
+const $usernameB    = document.getElementById('username-b');
 
 // ─── DEVICE ID (persistent fingerprint) ─────────────────────────
 function getOrCreateDeviceId() {
@@ -498,6 +560,16 @@ function getOrCreateDeviceId() {
         localStorage.setItem(KEY, id);
     }
     return id;
+}
+
+// ─── AVATAR HELPER ──────────────────────────────────────────────
+function renderAvatar(el, profile) {
+    if (!profile) return;
+    if (profile.avatar_url) {
+        el.innerHTML = `<img src="${profile.avatar_url}" alt="avatar">`;
+    } else if (profile.avatar_emoji) {
+        el.textContent = profile.avatar_emoji;
+    }
 }
 
 // ─── DUEL TAB SWITCHER ──────────────────────────────────────────
@@ -519,15 +591,12 @@ function switchSide(side) {
 document.addEventListener('DOMContentLoaded', init);
 
 async function init() {
-    // Initialize device ID for anti-spam
     deviceId = getOrCreateDeviceId();
 
-    // Update all download links
     document.querySelectorAll('a[href*="apps.apple.com"]').forEach(a => {
         a.href = APP_STORE_URL;
     });
 
-    // Parse case ID from URL
     const params = new URLSearchParams(window.location.search);
     currentCaseId = params.get('id');
 
@@ -552,10 +621,15 @@ function looksLikeUUID(value) {
 async function loadCase(caseId) {
     const matchField = looksLikeUUID(caseId) ? 'id' : 'case_number';
 
-    // V65.0: Fetch duel fields alongside standard fields
+    // V66.0: Fetch author + opponent profiles via foreign key joins
     const { data: caseData, error: caseError } = await supabaseClient
         .from('cases')
-        .select('id, case_number, title, snippet, full_story, category, is_duel, opponent_story')
+        .select(`
+            id, case_number, title, snippet, full_story, category,
+            is_duel, opponent_story,
+            author:profiles!author_id ( username, avatar_url, avatar_emoji ),
+            opponent:profiles!opponent_id ( username, avatar_url, avatar_emoji )
+        `)
         .eq(matchField, caseId)
         .single();
 
@@ -564,7 +638,6 @@ async function loadCase(caseId) {
         return;
     }
 
-    // Always use the real uuid id for everything else
     const realCaseId = caseData.id;
 
     // Fetch combined vote stats
@@ -573,6 +646,13 @@ async function loadCase(caseId) {
         .select('*')
         .eq('case_id', realCaseId)
         .single();
+
+    // ── Update card header with author profile ──
+    const authorProfile = caseData.author;
+    if (authorProfile) {
+        $headerUsername.textContent = `@${authorProfile.username || 'anonymous'}`;
+        renderAvatar($headerAvatar, authorProfile);
+    }
 
     // ── Detect Duel Mode ──
     const isDuel = caseData.is_duel === true
@@ -583,18 +663,29 @@ async function loadCase(caseId) {
     $title.textContent = caseData.title;
 
     if (isDuel) {
-        // DUEL LAYOUT: show badge, tabs, both stories
+        // DUEL LAYOUT
         $duelBadge.classList.remove('hidden');
         $standardBody.classList.add('hidden');
         $duelBody.classList.remove('hidden');
 
+        // Side A: Author
         $duelStoryA.textContent = caseData.full_story || caseData.snippet;
-        $duelStoryB.textContent = caseData.opponent_story;
+        if (authorProfile) {
+            $usernameA.textContent = `@${authorProfile.username || 'anonymous'}`;
+            renderAvatar($avatarA, authorProfile);
+        }
 
-        // Reset to Side A tab
+        // Side B: Opponent
+        $duelStoryB.textContent = caseData.opponent_story;
+        const oppProfile = caseData.opponent;
+        if (oppProfile) {
+            $usernameB.textContent = `@${oppProfile.username || 'opponent'}`;
+            renderAvatar($avatarB, oppProfile);
+        }
+
         switchSide('a');
     } else {
-        // STANDARD LAYOUT: same as before
+        // STANDARD LAYOUT
         $body.textContent = caseData.full_story || caseData.snippet;
     }
 
@@ -625,7 +716,6 @@ async function loadCase(caseId) {
         console.warn('Dedup check failed, falling back to localStorage:', e);
     }
 
-    // Fallback: localStorage (covers old votes before device_id migration)
     if (!previousVote) {
         const storageKey = `aita_voted_${realCaseId}`;
         previousVote = localStorage.getItem(storageKey);
@@ -635,10 +725,8 @@ async function loadCase(caseId) {
         showResults(stats, previousVote, true);
     }
 
-    // Make sure the rest of the page uses the real uuid going forward
     currentCaseId = realCaseId;
 
-    // Show the card, hide loading
     $loading.classList.add('hidden');
     $caseCard.classList.remove('hidden');
     $voteCounter.classList.remove('hidden');
@@ -650,12 +738,10 @@ function selectVote(voteType) {
 
     selectedVote = voteType;
 
-    // Update UI selection
     document.querySelectorAll('.vote-option').forEach(el => {
         el.classList.toggle('selected', el.dataset.vote === voteType);
     });
 
-    // Enable submit button
     $submitBtn.disabled = false;
 }
 
@@ -668,7 +754,6 @@ async function submitVote() {
     $submitBtn.textContent = 'Submitting...';
 
     try {
-        // Call the RPC function with device_id for anti-spam
         const { data, error } = await supabaseClient.rpc('vote_on_case_web', {
             p_case_id:   currentCaseId,
             p_vote_type: selectedVote,
@@ -678,13 +763,10 @@ async function submitVote() {
         if (error) throw error;
         if (data && !data.success) throw new Error(data.error);
 
-        // Save to localStorage as backup
         localStorage.setItem(`aita_voted_${currentCaseId}`, selectedVote);
 
-        // Show results (mark if server detected duplicate)
         showResults(data, selectedVote, data.already_voted);
 
-        // Update total counter
         if (data && data.total_votes) {
             $totalVotes.textContent = data.total_votes.toLocaleString();
         }
@@ -712,7 +794,6 @@ function showResults(stats, userVote, wasDuplicate) {
         { key: 'nah', label: 'No One Sucks',     emoji: '✅', count: nos, color: '#9CA3AF' },
     ];
 
-    // Sort by count descending (winner on top)
     results.sort((a, b) => b.count - a.count);
 
     const headerText = wasDuplicate
@@ -725,12 +806,8 @@ function showResults(stats, userVote, wasDuplicate) {
         const isUser = r.key === userVote;
         const delay = i * 120;
 
-        // Label (left side): white text when fill covers it (>= 25%), dark otherwise
         const onFill = pct >= 25;
         const lblColor = onFill ? '#ffffff' : '#374151';
-
-        // Percentage (right side): ALWAYS dark/colored since it sits on the grey track
-        // Only go white if fill is nearly full (>= 85%) so it actually covers the right edge
         const pctColor = pct >= 85 ? '#ffffff' : r.color;
 
         const badge = isUser
@@ -770,7 +847,6 @@ function showResults(stats, userVote, wasDuplicate) {
     `;
     $results.classList.remove('hidden');
 
-    // Animate bar fills
     requestAnimationFrame(() => {
         setTimeout(() => {
             document.querySelectorAll('.result-bar-fill').forEach(bar => {
