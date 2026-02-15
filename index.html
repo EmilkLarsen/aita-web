@@ -174,7 +174,7 @@
         }
 
         /* ══════════════════════════════════════ */
-        /* ── DUEL MODE STYLES (V66.0) ────────── */
+        /* ── DUEL MODE STYLES (V67.0) ────────── */
         /* ══════════════════════════════════════ */
 
         .duel-badge {
@@ -189,6 +189,90 @@
             font-weight: 800;
             letter-spacing: 0.6px;
             text-transform: uppercase;
+        }
+
+        /* ── Face-Off Header (V67.0) ──────────── */
+        .faceoff-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 10px 16px;
+            gap: 8px;
+        }
+        .faceoff-side {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            flex: 1;
+            min-width: 0;
+        }
+        .faceoff-avatar {
+            width: 68px;
+            height: 68px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            flex-shrink: 0;
+            overflow: hidden;
+            position: relative;
+        }
+        .faceoff-avatar.avatar-a {
+            background: #EDE9FE;
+            border: 3px solid var(--purple-brand);
+        }
+        .faceoff-avatar.avatar-b {
+            background: #CCFBF1;
+            border: 3px solid var(--teal-brand);
+        }
+        .faceoff-avatar img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+        .faceoff-avatar-fallback {
+            width: 32px;
+            height: 32px;
+            color: #9CA3AF;
+        }
+        .faceoff-username {
+            font-size: 12px;
+            font-weight: 700;
+            color: #6B7280;
+            text-align: center;
+            max-width: 100%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .faceoff-label {
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .faceoff-label-a { color: var(--purple-brand); }
+        .faceoff-label-b { color: var(--teal-brand); }
+
+        .vs-badge {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--teal-brand), var(--teal-light));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            box-shadow: 0 2px 10px rgba(13, 148, 136, 0.35);
+        }
+        .vs-badge span {
+            color: white;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
         }
 
         /* Tab switcher */
@@ -340,7 +424,7 @@
     <div id="case-card" class="w-full max-w-md mt-6 hidden">
         <div class="bg-white rounded-3xl shadow-2xl overflow-hidden card-enter">
 
-            <!-- Header bar (dynamically updated with author profile) -->
+            <!-- ═══ STANDARD HEADER (shown for normal cases) ═══ -->
             <div id="card-header" class="flex items-center gap-3 px-6 pt-6 pb-4 border-b border-gray-100">
                 <div id="header-avatar" class="w-11 h-11 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
                     <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
@@ -353,12 +437,59 @@
                 </div>
             </div>
 
+            <!-- ═══ DUEL FACE-OFF HEADER (hidden by default, shown for duels) ═══ -->
+            <div id="duel-header" class="hidden">
+                <!-- Top bar: "cast your judgment!" -->
+                <div class="flex items-center gap-3 px-6 pt-6 pb-3 border-b border-gray-100">
+                    <div id="duel-header-avatar" class="w-11 h-11 bg-gray-200 rounded-full flex items-center justify-center shrink-0">
+                        <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <p id="duel-header-username" class="text-sm text-gray-400 font-medium leading-tight">@anonymous</p>
+                        <p class="text-base font-bold text-gray-800 leading-tight">cast your judgment!</p>
+                    </div>
+                </div>
+
+                <!-- Duel badge centered -->
+                <div class="flex justify-center pt-4 pb-1">
+                    <span class="duel-badge">⚔ DUEL</span>
+                </div>
+
+                <!-- Face-Off: Avatar A  —  VS  —  Avatar B -->
+                <div class="faceoff-header">
+                    <!-- Side A -->
+                    <div class="faceoff-side">
+                        <div class="faceoff-avatar avatar-a" id="faceoff-avatar-a">
+                            <svg class="faceoff-avatar-fallback" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                        </div>
+                        <span class="faceoff-label faceoff-label-a">verdict</span>
+                        <span id="faceoff-username-a" class="faceoff-username">@anonymous</span>
+                    </div>
+
+                    <!-- VS Badge -->
+                    <div class="vs-badge">
+                        <span>VS</span>
+                    </div>
+
+                    <!-- Side B -->
+                    <div class="faceoff-side">
+                        <div class="faceoff-avatar avatar-b" id="faceoff-avatar-b">
+                            <svg class="faceoff-avatar-fallback" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                        </div>
+                        <span class="faceoff-label faceoff-label-b">opponent</span>
+                        <span id="faceoff-username-b" class="faceoff-username">@opponent</span>
+                    </div>
+                </div>
+            </div>
+
             <!-- Case content -->
             <div class="px-6 pt-5 pb-6">
 
-                <!-- Duel badge (shown for duel cases) -->
+                <!-- Duel badge (only for duel cases WITHOUT the face-off header — kept as fallback, hidden in V67) -->
                 <div id="duel-badge-slot" class="hidden flex justify-center mb-4">
-                    <span class="duel-badge">⚔️ DUEL</span>
+                    <span class="duel-badge">⚔ DUEL</span>
                 </div>
 
                 <!-- Title -->
@@ -529,11 +660,21 @@ const $submitBtn    = document.getElementById('submit-btn');
 const $voteCounter  = document.getElementById('vote-counter');
 const $totalVotes   = document.getElementById('total-votes-display');
 
-// Header refs
+// Standard header refs
+const $cardHeader     = document.getElementById('card-header');
 const $headerAvatar   = document.getElementById('header-avatar');
 const $headerUsername  = document.getElementById('header-username');
 
-// Duel-specific refs
+// Duel header refs (Face-Off)
+const $duelHeader         = document.getElementById('duel-header');
+const $duelHeaderAvatar   = document.getElementById('duel-header-avatar');
+const $duelHeaderUsername  = document.getElementById('duel-header-username');
+const $faceoffAvatarA     = document.getElementById('faceoff-avatar-a');
+const $faceoffAvatarB     = document.getElementById('faceoff-avatar-b');
+const $faceoffUsernameA   = document.getElementById('faceoff-username-a');
+const $faceoffUsernameB   = document.getElementById('faceoff-username-b');
+
+// Duel body refs
 const $duelBadge    = document.getElementById('duel-badge-slot');
 const $standardBody = document.getElementById('standard-body');
 const $duelBody     = document.getElementById('duel-body');
@@ -566,8 +707,9 @@ function getOrCreateDeviceId() {
 function renderAvatar(el, profile) {
     if (!profile) return;
     if (profile.avatar_url) {
-        el.innerHTML = `<img src="${profile.avatar_url}" alt="avatar">`;
+        el.innerHTML = `<img src="${profile.avatar_url}" alt="avatar" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
     } else if (profile.avatar_emoji) {
+        el.innerHTML = '';
         el.textContent = profile.avatar_emoji;
     }
 }
@@ -621,12 +763,12 @@ function looksLikeUUID(value) {
 async function loadCase(caseId) {
     const matchField = looksLikeUUID(caseId) ? 'id' : 'case_number';
 
-    // V66.0: Fetch author + opponent profiles via foreign key joins
+    // V67.0: Fetch author + opponent profiles via foreign key joins
     const { data: caseData, error: caseError } = await supabaseClient
         .from('cases')
         .select(`
             id, case_number, title, snippet, full_story, category,
-            is_duel, opponent_story,
+            is_duel, opponent_id, opponent_story,
             author:profiles!author_id ( username, avatar_url, avatar_emoji ),
             opponent:profiles!opponent_id ( username, avatar_url, avatar_emoji )
         `)
@@ -647,47 +789,74 @@ async function loadCase(caseId) {
         .eq('case_id', realCaseId)
         .single();
 
-    // ── Update card header with author profile ──
-    const authorProfile = caseData.author;
-    if (authorProfile) {
-        $headerUsername.textContent = `@${authorProfile.username || 'anonymous'}`;
-        renderAvatar($headerAvatar, authorProfile);
-    }
-
     // ── Detect Duel Mode ──
     const isDuel = caseData.is_duel === true
                 && caseData.opponent_story
                 && caseData.opponent_story.trim().length > 0;
 
-    // ── Populate the UI ──
-    $title.textContent = caseData.title;
+    const authorProfile = caseData.author;
+    const oppProfile    = caseData.opponent;
 
     if (isDuel) {
-        // DUEL LAYOUT
-        $duelBadge.classList.remove('hidden');
+        // ═══════════════════════════════════════
+        // DUEL LAYOUT — Face-Off Header + Tabs
+        // ═══════════════════════════════════════
+
+        // Hide standard header, show duel header
+        $cardHeader.classList.add('hidden');
+        $duelHeader.classList.remove('hidden');
+
+        // Populate duel header top bar (author info for "cast your judgment")
+        if (authorProfile) {
+            $duelHeaderUsername.textContent = `@${authorProfile.username || 'anonymous'}`;
+            renderAvatar($duelHeaderAvatar, authorProfile);
+        }
+
+        // Populate Face-Off avatars
+        if (authorProfile) {
+            renderAvatar($faceoffAvatarA, authorProfile);
+            $faceoffUsernameA.textContent = `@${authorProfile.username || 'anonymous'}`;
+        }
+        if (oppProfile) {
+            renderAvatar($faceoffAvatarB, oppProfile);
+            $faceoffUsernameB.textContent = `@${oppProfile.username || 'opponent'}`;
+        }
+
+        // Show duel body, hide standard body
         $standardBody.classList.add('hidden');
         $duelBody.classList.remove('hidden');
 
-        // Side A: Author
+        // Side A: Author story
         $duelStoryA.textContent = caseData.full_story || caseData.snippet;
         if (authorProfile) {
             $usernameA.textContent = `@${authorProfile.username || 'anonymous'}`;
             renderAvatar($avatarA, authorProfile);
         }
 
-        // Side B: Opponent
+        // Side B: Opponent story
         $duelStoryB.textContent = caseData.opponent_story;
-        const oppProfile = caseData.opponent;
         if (oppProfile) {
             $usernameB.textContent = `@${oppProfile.username || 'opponent'}`;
             renderAvatar($avatarB, oppProfile);
         }
 
         switchSide('a');
+
     } else {
-        // STANDARD LAYOUT
+        // ═══════════════════════════════════════
+        // STANDARD LAYOUT — Single User
+        // ═══════════════════════════════════════
+
+        if (authorProfile) {
+            $headerUsername.textContent = `@${authorProfile.username || 'anonymous'}`;
+            renderAvatar($headerAvatar, authorProfile);
+        }
+
         $body.textContent = caseData.full_story || caseData.snippet;
     }
+
+    // ── Title (always shown) ──
+    $title.textContent = caseData.title;
 
     const totalVotes = stats ? stats.total_votes : 0;
     $totalVotes.textContent = totalVotes.toLocaleString();
