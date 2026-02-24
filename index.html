@@ -637,7 +637,7 @@
 
         <!-- ── CTA: Download App ────────────────────────── -->
         <div class="mt-6 w-full">
-            <a id="download-btn" href="https://apps.apple.com/app/aita/id0000000000"
+            <a id="download-btn" href="https://apps.apple.com/app/aita-whos-right/id6758395005"
                class="btn-download block w-full py-4 rounded-full text-white font-bold text-lg text-center tracking-wide">
                 Share Your Own Story!
             </a>
@@ -656,7 +656,7 @@
             <p class="text-5xl mb-4">⚖️</p>
             <h2 class="text-xl font-bold text-white mb-2">Case Not Found</h2>
             <p class="text-white/70 mb-8 text-sm leading-relaxed">This case may have been removed or the link is invalid. But you can still judge real-life conflicts in the app!</p>
-            <a href="https://apps.apple.com/app/aita/id0000000000"
+            <a href="https://apps.apple.com/app/aita-whos-right/id6758395005"
                class="btn-download inline-block px-8 py-4 rounded-full text-white font-bold text-lg">
                 Download AITA
             </a>
@@ -912,6 +912,40 @@ async function loadCase(caseId) {
 
     // ── Title (always shown) ──
     $title.textContent = caseData.title;
+
+    // ── V108.0: Dynamic OneLink Attribution ──────────────────────
+    // Rewrites all download/CTA buttons to route through AppsFlyer
+    // OneLink with the case author's username as af_sub1, so installs
+    // from this shared link are attributed to the influencer.
+    (function updateOneLinkCTAs() {
+        const authorUsername = (authorProfile && authorProfile.username)
+            ? authorProfile.username
+            : '';
+        const caseNum = caseData.case_number || realCaseId;
+
+        // Base OneLink — template Etqs on aitapp.onelink.me
+        const params = new URLSearchParams({
+            pid:     'web_share',
+            c:       'influencer_program',
+            af_sub1: authorUsername,          // referrer username
+            af_sub2: String(caseNum),         // which case drove the install
+            af_dp:   `verdict://case/${realCaseId}`  // deep link into app
+        });
+        const oneLinkURL = `https://aitapp.onelink.me/Etqs?${params.toString()}`;
+
+        // Primary CTA (inside case card)
+        const $dlBtn = document.getElementById('download-btn');
+        if ($dlBtn) $dlBtn.href = oneLinkURL;
+
+        // Error-state fallback CTA
+        document.querySelectorAll('#error-state .btn-download').forEach(el => {
+            // Keep these pointing to generic App Store (no author context)
+            el.href = 'https://apps.apple.com/app/aita-whos-right/id6758395005';
+        });
+
+        console.log('🔗 V108.0: OneLink CTA →', oneLinkURL);
+    })();
+    // ─────────────────────────────────────────────────────────────
 
     const totalVotes = stats ? stats.total_votes : 0;
     // V70.0: vote count now in live counter
