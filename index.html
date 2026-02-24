@@ -913,44 +913,46 @@ async function loadCase(caseId) {
     // ── Title (always shown) ──
     $title.textContent = caseData.title;
 
-    // ── V109.0: Dynamic OneLink Attribution ──────────────────────
-    // Rewrites all download/CTA buttons to route through AppsFlyer
-    // OneLink with the case author's username as af_sub1, so installs
-    // from this shared link are attributed to the influencer.
+    // ── V111.0: Dynamic OneLink Attribution (Clean URL) ────────
+    // Rewrites download CTA to AppsFlyer OneLink with influencer
+    // attribution via af_sub1. Uses deep_link_value (UDL best
+    // practice) instead of af_dp to keep URLs short and clean.
     //
-    // V109.0 FIXES:
-    //   1. authorProfile is the JOIN object from `author:profiles!author_id(...)`,
-    //      so we use optional chaining `caseData.author?.username`.
-    //      Fallback to 'anonymous' instead of '' to avoid empty af_sub1.
-    //   2. Added af_web_dp = current page URL so desktop / no-app-installed
-    //      users land on the web case page instead of a blank screen.
+    // V111.0 CHANGES:
+    //   - Replaced af_dp=verdict://... with deep_link_value=<caseId>
+    //   - Removed af_web_dp (caused Unauthorized_redirection error)
+    //   - af_sub1 only included when a REAL username exists
+    //
+    // Example output:
+    //   https://aitapp.onelink.me/Etqs?pid=web_share&c=influencer_program
+    //     &af_sub1=emillarsen&deep_link_value=6f79a92e-...
     (function updateOneLinkCTAs() {
-        const authorUsername = caseData.author?.username || 'anonymous';
-        const caseNum = caseData.case_number || realCaseId;
+        const authorUsername = caseData.author?.username || '';
 
-        // Base OneLink — template Etqs on aitapp.onelink.me
+        // Build params — only include af_sub1 if we have a real username
         const params = new URLSearchParams({
-            pid:      'web_share',
-            c:        'influencer_program',
-            af_sub1:  authorUsername,               // referrer username
-            af_sub2:  String(caseNum),              // which case drove the install
-            af_dp:    `verdict://case/${realCaseId}`,        // deep link into app
-            af_web_dp: window.location.href         // V109.0: web fallback (prevents blank page)
+            pid:             'web_share',
+            c:               'influencer_program',
+            deep_link_value: realCaseId              // UDL: case UUID for deferred deep link
         });
+
+        // Only attach referrer when it's a genuine username (not empty/default)
+        if (authorUsername && authorUsername !== 'anonymous' && !authorUsername.startsWith('judge_')) {
+            params.set('af_sub1', authorUsername);
+        }
+
         const oneLinkURL = `https://aitapp.onelink.me/Etqs?${params.toString()}`;
 
         // Primary CTA (inside case card)
         const $dlBtn = document.getElementById('download-btn');
         if ($dlBtn) $dlBtn.href = oneLinkURL;
 
-        // Error-state fallback CTA
+        // Error-state fallback CTA — generic App Store (no author context)
         document.querySelectorAll('#error-state .btn-download').forEach(el => {
-            // Keep these pointing to generic App Store (no author context)
             el.href = 'https://apps.apple.com/app/aita-whos-right/id6758395005';
         });
 
-        console.log('🔗 V109.0: OneLink CTA →', oneLinkURL);
-        console.log('🔗 V109.0: af_sub1 (referrer) =', authorUsername);
+        console.log('🔗 V111.0: OneLink CTA →', oneLinkURL);
     })();
     // ─────────────────────────────────────────────────────────────
 
